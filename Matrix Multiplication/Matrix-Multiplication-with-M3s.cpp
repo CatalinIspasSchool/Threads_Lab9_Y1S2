@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <chrono>
 using namespace sycl;
-constexpr size_t N = 6;// For performance results -- try large scale matrices
+constexpr size_t N = 300;// For performance results -- try large scale matrices
 constexpr size_t TILE_SIZE = 2; // Set an appropriate tile size
 
 void tiled_matrix_multiplication(const float* A, const float* B, float* C, queue& q) {
@@ -34,14 +34,14 @@ void tiled_matrix_multiplication(const float* A, const float* B, float* C, queue
                 item.barrier(access::fence_space::local_space);
 
                 // Perform tile multiplication
-                for (int k = 0; k < TILE_SIZE; ++k) {
+                for (int k = 0; k < TILE_SIZE; ++k) { 
                     temp += tileA[localRow][k] * tileB[k][localCol];
                 }
                 item.barrier(access::fence_space::local_space); // Wait for all work-items to finish
             }
             accC[globalRow][globalCol] = temp;
-            });
         });
+    });
 }
 
 void matrix_multiplication(const float* A, const float* B, float* C, queue& q) {
@@ -115,10 +115,9 @@ void e_usm_matrix_multiplication(const float* A_host, const float* B_host, float
 }
 int main() {
 
-
-    float A[N * N];
-    float B[N * N];
-    float C[N * N];
+    std::vector<float>A(N * N);
+    std::vector<float>B(N * N);
+    std::vector<float>C(N * N);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             A[i * N + j] = i;
@@ -146,11 +145,12 @@ int main() {
     }
     auto start = std::chrono::high_resolution_clock::now();
     //e_usm_matrix_multiplication(A, B, C, q);
-    tiled_matrix_multiplication(A, B, C, q);
+    tiled_matrix_multiplication(A.data(), B.data(), C.data(), q);
+    //matrix_multiplication(A, B, C, q);
     q.wait();
     auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
-    std::cout << "For the Data: " << N << "x" << N << "-Matrix multiplication took " << duration.count() << " nanoseconds.\n";
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    std::cout << "For the Data: " << N << "x" << N << "-Matrix multiplication took " << duration.count() << " milliseconds.\n";
     std::cout << "Only part of the matrices is printed. AxB=C\n";
     int P = std::min(static_cast<int>(N), 6);
     for (int i = 0; i < P; i++) {
