@@ -1,7 +1,7 @@
 //Matrix Multiplication using different Memory Management Model
 // CMP202
 // j.zarrin@abertay.ac.uk
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <iostream>
 #include <algorithm>
 #include <chrono>
